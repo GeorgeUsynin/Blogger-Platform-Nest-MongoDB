@@ -2,12 +2,12 @@ export { BlogsController } from './api';
 export { Blog, BlogSchema } from './domain';
 import {
   CreateBlogUseCase,
-  UpdateBlogCommand,
-  DeleteBlogCommand,
+  UpdateBlogUseCase,
+  DeleteBlogUseCase,
 } from './application/use-cases';
 import { BlogsRepository, BlogsQueryRepository } from './infrastructure';
 
-const blogsUseCases = [CreateBlogUseCase, UpdateBlogCommand, DeleteBlogCommand];
+const blogsUseCases = [CreateBlogUseCase, UpdateBlogUseCase, DeleteBlogUseCase];
 
 export const blogsProviders = [
   BlogsRepository,

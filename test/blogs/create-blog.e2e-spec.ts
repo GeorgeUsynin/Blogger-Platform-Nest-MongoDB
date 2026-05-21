@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { Connection } from 'mongoose';
 import { CreateBlogInputDto } from '../../src/modules/bloggers-platform/blogs/api/dto';
 import { HttpStatus } from '@nestjs/common';
 import {
@@ -10,21 +9,18 @@ import {
 } from '../helpers';
 
 describe('BlogsController (e2e)', () => {
-  jest.setTimeout(30000);
-
   let app: INestApplication;
-  let connection: Connection;
   let basicAuthorization: {
     Authorization: string;
   };
 
   beforeAll(async () => {
-    ({ app, connection, basicAuthorization } = await runBeforeAllSetup());
+    ({ app, basicAuthorization } = await runBeforeAllSetup());
   });
 
   afterAll(async () => {
-    if (app && connection) {
-      await runAfterAllSetup(app, connection);
+    if (app) {
+      await runAfterAllSetup(app);
     }
   });
 

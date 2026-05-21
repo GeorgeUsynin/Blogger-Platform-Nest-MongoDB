@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
-import { Connection } from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
 import { ENV_VARIABLE_NAMES } from '../../src/constants';
@@ -54,12 +54,9 @@ export const runBeforeAllSetup = async () => {
   return { app, connection, basicAuthorization };
 };
 
-export const runAfterAllSetup = async (
-  app: INestApplication,
-  connection: Connection,
-) => {
+export const runAfterAllSetup = async (app: INestApplication) => {
   await app.close();
-  await connection.close();
+  await mongoose.connection.close();
 };
 
 const websiteUrlPattern =
