@@ -11,7 +11,7 @@ import {
 } from '@nestjs/swagger';
 import { SwaggerErrorsMessagesViewDto } from '../../../../../core/dto';
 import { SwaggerCreatePostInputDto } from '../../../posts/api/swagger';
-import { PostViewDto } from 'src/modules/bloggers-platform/posts/api/dto';
+import { PostViewDto } from '../../../posts/api/dto';
 
 export const CreatePostByBlogIdApi = () => {
   return applyDecorators(

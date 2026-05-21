@@ -3,10 +3,8 @@ import { pipesSetup } from './pipes.setup';
 import { INestApplication } from '@nestjs/common';
 import { globalPrefixSetup } from './global-prefix.setup';
 import { swaggerSetup } from './swagger.setup';
-import { Request, Response } from 'express';
 import { exceptionFilterSetup } from './exception-filter.setup';
 import { CoreConfig } from '../core/config';
-import { GLOBAL_PREFIX } from '../constants';
 
 export function appSetup(app: INestApplication, coreConfig: CoreConfig) {
   // Enable CORS
