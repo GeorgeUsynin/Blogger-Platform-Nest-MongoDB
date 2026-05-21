@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
+import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
 import { type Response, type Request } from 'express';
 import { ExtractUserFromRequest } from '../guards/decorators';
 import { UserContextDto, UserContextWithDeviceIdDto } from '../guards/dto';
@@ -52,6 +53,7 @@ import {
 } from '../application/use-cases';
 import { parseUserAgent } from './helpers';
 
+@UseGuards(ThrottlerGuard)
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -64,6 +66,7 @@ export class AuthController {
   @Get('me')
   @HttpCode(HttpStatus.OK)
   @MeApi()
+  @SkipThrottle()
   async me(@ExtractUserFromRequest() user: UserContextDto): Promise<MeViewDto> {
     const foundUser = await this.usersQueryRepository.getUserById(user.userId);
 
@@ -103,6 +106,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @LogoutApi()
+  @SkipThrottle()
   async logout(@ExtractUserFromRequest() user: UserContextWithDeviceIdDto) {
     await this.commandBus.execute(new LogoutUserCommand(user.deviceId));
   }
@@ -112,6 +116,7 @@ export class AuthController {
   @Post('refresh-token')
   @HttpCode(HttpStatus.OK)
   @RefreshTokenApi()
+  @SkipThrottle()
   async refreshToken(
     @Res({ passthrough: true }) response: Response,
     @ExtractUserFromRequest() user: UserContextWithDeviceIdDto,

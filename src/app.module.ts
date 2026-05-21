@@ -11,6 +11,7 @@ import {
 import { AppController } from './app.controller';
 import { CoreModule } from './core';
 import { CoreConfig } from './core/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -23,6 +24,15 @@ import { CoreConfig } from './core/config';
           dbName: coreConfig.DB_NAME,
         };
       },
+      inject: [CoreConfig],
+    }),
+    ThrottlerModule.forRootAsync({
+      useFactory: (coreConfig: CoreConfig) => [
+        {
+          ttl: coreConfig.API_REQUEST_TIME_TO_LIVE,
+          limit: coreConfig.API_REQUEST_MAXIMUM_LIMIT,
+        },
+      ],
       inject: [CoreConfig],
     }),
     CqrsModule.forRoot(),

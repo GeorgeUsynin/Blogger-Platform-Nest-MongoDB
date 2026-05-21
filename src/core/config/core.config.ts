@@ -18,6 +18,9 @@ export class CoreConfig {
       message: 'Set Env variable PORT, example: 3000',
     },
   )
+  @IsNotEmpty({
+    message: 'Set Env variable PORT, example: 3000',
+  })
   [ENV_VARIABLE_NAMES.PORT]: number = Number(
     this.configService.get(ENV_VARIABLE_NAMES.PORT),
   );
@@ -81,6 +84,34 @@ export class CoreConfig {
         ENV_VARIABLE_NAMES.INCLUDE_TESTING_MODULE,
       ) as string,
     ) as boolean;
+
+  @IsNumber(
+    {},
+    {
+      message: 'Set Env variable API_REQUEST_MAXIMUM_LIMIT, example: 5',
+    },
+  )
+  @IsNotEmpty({
+    message: 'Set Env variable API_REQUEST_MAXIMUM_LIMIT, example: 5',
+  })
+  [ENV_VARIABLE_NAMES.API_REQUEST_MAXIMUM_LIMIT]: number = Number(
+    this.configService.get(ENV_VARIABLE_NAMES.API_REQUEST_MAXIMUM_LIMIT),
+  );
+
+  @IsNumber(
+    {},
+    {
+      message:
+        'Set Env variable API_REQUEST_TIME_TO_LIVE, example: 10000 (milliseconds)',
+    },
+  )
+  @IsNotEmpty({
+    message:
+      'Set Env variable API_REQUEST_TIME_TO_LIVE, example: 10000 (milliseconds)',
+  })
+  [ENV_VARIABLE_NAMES.API_REQUEST_TIME_TO_LIVE]: number = Number(
+    this.configService.get(ENV_VARIABLE_NAMES.API_REQUEST_TIME_TO_LIVE),
+  );
 
   constructor(private configService: ConfigService) {
     configValidationUtility.validateConfig(this);
