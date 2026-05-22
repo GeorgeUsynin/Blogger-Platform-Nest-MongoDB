@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, TestingModule, TestingModuleBuilder } from '@nestjs/testing';
 import mongoose, { Connection } from 'mongoose';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
@@ -18,15 +18,20 @@ export const getBasicAuthorization = (login: string, password: string) => {
   return { Authorization: `Basic ${codedAuth}` };
 };
 
-export const runBeforeAllSetup = async () => {
-  const moduleFixture: TestingModule = await Test.createTestingModule({
+export const runBeforeAllSetup = async (
+  customBuilderSetup = (builder: TestingModuleBuilder) => {},
+) => {
+  const testingModuleBuilder: TestingModuleBuilder = Test.createTestingModule({
     imports: [AppModule, MyTestingModule],
   })
     .overrideGuard(ThrottlerGuard)
     .useValue({
       canActivate: () => true,
-    })
-    .compile();
+    });
+
+  customBuilderSetup(testingModuleBuilder);
+
+  const moduleFixture = await testingModuleBuilder.compile();
 
   const app: INestApplication = moduleFixture.createNestApplication();
 
