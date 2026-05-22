@@ -23,6 +23,7 @@ import {
   TerminateAllDevicesExceptCurrentCommand,
   TerminateDeviceByDeviceIdCommand,
 } from '../application/use-cases';
+import { UUIDValidationPipe } from '../../../../core/pipes';
 
 @Controller('security/devices')
 @ApiBearerAuth()
@@ -61,7 +62,7 @@ export class DevicesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @TerminateAuthDeviceSessionByIdApi()
   async deleteDeviceById(
-    @Param('deviceId') deviceId: string,
+    @Param('deviceId', UUIDValidationPipe) deviceId: string,
     @ExtractUserFromRequest() user: UserContextWithDeviceIdDto,
   ): Promise<void> {
     await this.commandBus.execute(
