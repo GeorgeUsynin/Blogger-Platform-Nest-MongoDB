@@ -4,7 +4,7 @@ import request from 'supertest';
 import { CreateBlogInputDto } from '../../src/modules/bloggers-platform/blogs/api/dto';
 import { runAfterAllSetup, runBeforeAllSetup } from '../helpers';
 
-describe('BlogsController (e2e) - DELETE /api/blogs/:id', () => {
+describe('BlogsController (e2e) - GET /api/blogs/:id', () => {
   let app: INestApplication;
   let basicAuthorization: {
     Authorization: string;
@@ -33,43 +33,24 @@ describe('BlogsController (e2e) - DELETE /api/blogs/:id', () => {
       .send(newBlog)
       .expect(HttpStatus.CREATED);
 
-    return body.id as string;
+    return body;
   };
 
-  it('deletes blog from database by providing ID', async () => {
-    const requestedId = await createBlog();
-
-    await request(app.getHttpServer())
-      .delete(`/api/blogs/${requestedId}`)
-      .set(basicAuthorization)
-      .expect(HttpStatus.NO_CONTENT);
-
-    await request(app.getHttpServer())
-      .get(`/api/blogs/${requestedId}`)
-      .expect(HttpStatus.NOT_FOUND);
+  it('returns blog by requested id', async () => {
+    const createdBlog = await createBlog();
 
     const { body } = await request(app.getHttpServer())
-      .get('/api/blogs')
+      .get(`/api/blogs/${createdBlog.id}`)
       .expect(HttpStatus.OK);
 
-    expect(body.totalCount).toBe(0);
-    expect(body.items).toHaveLength(0);
+    expect(body).toEqual(createdBlog);
   });
 
-  it('returns 404 status code if the blog was not found by requested ID', async () => {
+  it('returns 404 status code if there is no requested blog in database', async () => {
     const fakeRequestedId = '507f1f77bcf86cd799439011';
 
     await request(app.getHttpServer())
-      .delete(`/api/blogs/${fakeRequestedId}`)
-      .set(basicAuthorization)
+      .get(`/api/blogs/${fakeRequestedId}`)
       .expect(HttpStatus.NOT_FOUND);
-  });
-
-  it('returns 401 Unauthorized status code if there is no proper Authorization header', async () => {
-    const requestedId = await createBlog();
-
-    await request(app.getHttpServer())
-      .delete(`/api/blogs/${requestedId}`)
-      .expect(HttpStatus.UNAUTHORIZED);
   });
 });

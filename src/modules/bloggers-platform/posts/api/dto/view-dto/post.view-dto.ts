@@ -49,6 +49,9 @@ export class PostViewDto {
   @ApiProperty()
   blogName: string;
 
+  @ApiProperty()
+  blogId: string;
+
   @ApiProperty({ type: Date })
   createdAt: Date;
 
@@ -63,6 +66,7 @@ export class PostViewDto {
     dto.shortDescription = post.shortDescription;
     dto.content = post.content;
     dto.blogName = post.blogName;
+    dto.blogId = post.blogId;
     dto.createdAt = post.createdAt;
     dto.extendedLikesInfo = {
       likesCount: post.likesInfo.likesCount,
