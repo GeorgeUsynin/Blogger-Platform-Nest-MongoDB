@@ -2,14 +2,14 @@ import { INestApplication } from '@nestjs/common';
 import { HttpStatus } from '@nestjs/common';
 import request from 'supertest';
 import { CreateBlogInputDto } from '../../src/modules/bloggers-platform/blogs/api/dto';
-import { CreatePostWithoutBlogIdInputDto } from '../../src/modules/bloggers-platform/blogs/api/dto';
+import { CreatePostInputDto } from '../../src/modules/bloggers-platform/posts/api/dto';
 import {
   createErrorMessages,
   runAfterAllSetup,
   runBeforeAllSetup,
 } from '../helpers';
 
-describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
+describe('PostsController (e2e) - POST /api/posts', () => {
   let app: INestApplication;
   let basicAuthorization: {
     Authorization: string;
@@ -47,17 +47,18 @@ describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
     return body;
   };
 
-  it('creates a new post for specified blog by blogId', async () => {
+  it('creates a new post', async () => {
     const blog = await createBlog();
-    const newPost: CreatePostWithoutBlogIdInputDto = {
-      title: 'Sustainable habits',
-      shortDescription: 'Simple tips for greener daily routines',
-      content:
-        'Start with small steps: reduce waste, reuse items, and recycle.',
+
+    const newPost: CreatePostInputDto = {
+      title: 'New title',
+      blogId: blog.id,
+      content: 'New content',
+      shortDescription: 'New short description',
     };
 
     const { body } = await request(app.getHttpServer())
-      .post(`/api/blogs/${blog.id}/posts`)
+      .post('/api/posts')
       .set(basicAuthorization)
       .send(newPost)
       .expect(HttpStatus.CREATED);
@@ -65,7 +66,6 @@ describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
     expect(body).toEqual({
       id: expect.any(String),
       ...newPost,
-      blogId: blog.id,
       blogName: blog.name,
       createdAt: expect.any(String),
       extendedLikesInfo: {
@@ -76,11 +76,11 @@ describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
       },
     });
 
-    const getResponse = await request(app.getHttpServer())
-      .get(`/api/blogs/${blog.id}/posts`)
+    const { body: allPostsResponse } = await request(app.getHttpServer())
+      .get('/api/posts')
       .expect(HttpStatus.OK);
 
-    expect(getResponse.body).toEqual({
+    expect(allPostsResponse).toEqual({
       pagesCount: 1,
       page: 1,
       pageSize: 10,
@@ -89,56 +89,25 @@ describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
     });
   });
 
-  it('returns 404 status code if blog is not found by requested ID', async () => {
-    const fakeRequestedId = '507f1f77bcf86cd799439011';
-    const newPost: CreatePostWithoutBlogIdInputDto = {
-      title: 'Sustainable habits',
-      shortDescription: 'Simple tips for greener daily routines',
-      content:
-        'Start with small steps: reduce waste, reuse items, and recycle.',
-    };
-
-    await request(app.getHttpServer())
-      .post(`/api/blogs/${fakeRequestedId}/posts`)
-      .set(basicAuthorization)
-      .send(newPost)
-      .expect(HttpStatus.NOT_FOUND);
-  });
-
-  it('returns 401 Unauthorized status code if there is no proper Authorization header', async () => {
-    const blog = await createBlog();
-    const newPost: CreatePostWithoutBlogIdInputDto = {
-      title: 'Sustainable habits',
-      shortDescription: 'Simple tips for greener daily routines',
-      content:
-        'Start with small steps: reduce waste, reuse items, and recycle.',
-    };
-
-    await request(app.getHttpServer())
-      .post(`/api/blogs/${blog.id}/posts`)
-      .send(newPost)
-      .expect(HttpStatus.UNAUTHORIZED);
-  });
-
   describe('post payload validation', () => {
-    const existingBlogId = async () => {
+    let blogId: string;
+
+    beforeEach(async () => {
       const blog = await createBlog();
-      return blog.id as string;
-    };
+      blogId = blog.id;
+    });
 
     describe('title', () => {
       it('returns 400 status code and proper error object if `title` is missing', async () => {
-        const blogId = await existingBlogId();
-
         // @ts-expect-error bad request (title is missing)
-        const newPost: CreatePostWithoutBlogIdInputDto = {
-          shortDescription: 'Simple tips for greener daily routines',
-          content:
-            'Start with small steps: reduce waste, reuse items, and recycle.',
+        const newPost: CreatePostInputDto = {
+          blogId,
+          content: 'New content',
+          shortDescription: 'New short description',
         };
 
         const { body } = await request(app.getHttpServer())
-          .post(`/api/blogs/${blogId}/posts`)
+          .post('/api/posts')
           .set(basicAuthorization)
           .send(newPost)
           .expect(HttpStatus.BAD_REQUEST);
@@ -149,18 +118,16 @@ describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
       });
 
       it('returns 400 status code and proper error object for bad `title` type', async () => {
-        const blogId = await existingBlogId();
-
-        const newPost: CreatePostWithoutBlogIdInputDto = {
+        const newPost: CreatePostInputDto = {
           // @ts-expect-error bad request (title type is invalid)
           title: [],
-          shortDescription: 'Simple tips for greener daily routines',
-          content:
-            'Start with small steps: reduce waste, reuse items, and recycle.',
+          blogId,
+          content: 'New content',
+          shortDescription: 'New short description',
         };
 
         const { body } = await request(app.getHttpServer())
-          .post(`/api/blogs/${blogId}/posts`)
+          .post('/api/posts')
           .set(basicAuthorization)
           .send(newPost)
           .expect(HttpStatus.BAD_REQUEST);
@@ -171,17 +138,15 @@ describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
       });
 
       it('returns 400 status code and proper error object for bad `title` max length', async () => {
-        const blogId = await existingBlogId();
-
-        const newPost: CreatePostWithoutBlogIdInputDto = {
+        const newPost: CreatePostInputDto = {
           title: 'a'.repeat(31),
-          shortDescription: 'Simple tips for greener daily routines',
-          content:
-            'Start with small steps: reduce waste, reuse items, and recycle.',
+          blogId,
+          content: 'New content',
+          shortDescription: 'New short description',
         };
 
         const { body } = await request(app.getHttpServer())
-          .post(`/api/blogs/${blogId}/posts`)
+          .post('/api/posts')
           .set(basicAuthorization)
           .send(newPost)
           .expect(HttpStatus.BAD_REQUEST);
@@ -194,17 +159,15 @@ describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
 
     describe('shortDescription', () => {
       it('returns 400 status code and proper error object if `shortDescription` is missing', async () => {
-        const blogId = await existingBlogId();
-
         // @ts-expect-error bad request (shortDescription is missing)
-        const newPost: CreatePostWithoutBlogIdInputDto = {
-          title: 'Sustainable habits',
-          content:
-            'Start with small steps: reduce waste, reuse items, and recycle.',
+        const newPost: CreatePostInputDto = {
+          title: 'New title',
+          blogId,
+          content: 'New content',
         };
 
         const { body } = await request(app.getHttpServer())
-          .post(`/api/blogs/${blogId}/posts`)
+          .post('/api/posts')
           .set(basicAuthorization)
           .send(newPost)
           .expect(HttpStatus.BAD_REQUEST);
@@ -215,18 +178,16 @@ describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
       });
 
       it('returns 400 status code and proper error object for bad `shortDescription` type', async () => {
-        const blogId = await existingBlogId();
-
-        const newPost: CreatePostWithoutBlogIdInputDto = {
-          title: 'Sustainable habits',
+        const newPost: CreatePostInputDto = {
+          title: 'New title',
           // @ts-expect-error bad request (shortDescription type is invalid)
           shortDescription: [],
-          content:
-            'Start with small steps: reduce waste, reuse items, and recycle.',
+          blogId,
+          content: 'New content',
         };
 
         const { body } = await request(app.getHttpServer())
-          .post(`/api/blogs/${blogId}/posts`)
+          .post('/api/posts')
           .set(basicAuthorization)
           .send(newPost)
           .expect(HttpStatus.BAD_REQUEST);
@@ -237,17 +198,15 @@ describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
       });
 
       it('returns 400 status code and proper error object for bad `shortDescription` max length', async () => {
-        const blogId = await existingBlogId();
-
-        const newPost: CreatePostWithoutBlogIdInputDto = {
-          title: 'Sustainable habits',
+        const newPost: CreatePostInputDto = {
+          title: 'New title',
           shortDescription: 'a'.repeat(101),
-          content:
-            'Start with small steps: reduce waste, reuse items, and recycle.',
+          blogId,
+          content: 'New content',
         };
 
         const { body } = await request(app.getHttpServer())
-          .post(`/api/blogs/${blogId}/posts`)
+          .post('/api/posts')
           .set(basicAuthorization)
           .send(newPost)
           .expect(HttpStatus.BAD_REQUEST);
@@ -260,16 +219,15 @@ describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
 
     describe('content', () => {
       it('returns 400 status code and proper error object if `content` is missing', async () => {
-        const blogId = await existingBlogId();
-
         // @ts-expect-error bad request (content is missing)
-        const newPost: CreatePostWithoutBlogIdInputDto = {
-          title: 'Sustainable habits',
-          shortDescription: 'Simple tips for greener daily routines',
+        const newPost: CreatePostInputDto = {
+          title: 'New title',
+          blogId,
+          shortDescription: 'New short description',
         };
 
         const { body } = await request(app.getHttpServer())
-          .post(`/api/blogs/${blogId}/posts`)
+          .post('/api/posts')
           .set(basicAuthorization)
           .send(newPost)
           .expect(HttpStatus.BAD_REQUEST);
@@ -280,17 +238,16 @@ describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
       });
 
       it('returns 400 status code and proper error object for bad `content` type', async () => {
-        const blogId = await existingBlogId();
-
-        const newPost: CreatePostWithoutBlogIdInputDto = {
-          title: 'Sustainable habits',
-          shortDescription: 'Simple tips for greener daily routines',
+        const newPost: CreatePostInputDto = {
+          title: 'New title',
+          blogId,
+          shortDescription: 'New short description',
           // @ts-expect-error bad request (content type is invalid)
           content: [],
         };
 
         const { body } = await request(app.getHttpServer())
-          .post(`/api/blogs/${blogId}/posts`)
+          .post('/api/posts')
           .set(basicAuthorization)
           .send(newPost)
           .expect(HttpStatus.BAD_REQUEST);
@@ -301,16 +258,15 @@ describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
       });
 
       it('returns 400 status code and proper error object for bad `content` max length', async () => {
-        const blogId = await existingBlogId();
-
-        const newPost: CreatePostWithoutBlogIdInputDto = {
-          title: 'Sustainable habits',
-          shortDescription: 'Simple tips for greener daily routines',
+        const newPost: CreatePostInputDto = {
+          title: 'New title',
+          blogId,
+          shortDescription: 'New short description',
           content: 'a'.repeat(1001),
         };
 
         const { body } = await request(app.getHttpServer())
-          .post(`/api/blogs/${blogId}/posts`)
+          .post('/api/posts')
           .set(basicAuthorization)
           .send(newPost)
           .expect(HttpStatus.BAD_REQUEST);
@@ -320,5 +276,81 @@ describe('BlogsController (e2e) - POST /api/blogs/:blogId/posts', () => {
         );
       });
     });
+
+    describe('blogId', () => {
+      it('returns 400 status code and proper error object if `blogId` is missing', async () => {
+        // @ts-expect-error bad request (blogId is missing)
+        const newPost: CreatePostInputDto = {
+          title: 'New title',
+          shortDescription: 'New short description',
+          content: 'New content',
+        };
+
+        const { body } = await request(app.getHttpServer())
+          .post('/api/posts')
+          .set(basicAuthorization)
+          .send(newPost)
+          .expect(HttpStatus.BAD_REQUEST);
+
+        expect(createErrorMessages({ blogId: ['isRequired'] })).toEqual(
+          body.errorsMessages,
+        );
+      });
+
+      it('returns 400 status code and proper error object for bad `blogId` type', async () => {
+        const newPost: CreatePostInputDto = {
+          title: 'New title',
+          // @ts-expect-error bad request (blogId type is invalid)
+          blogId: [],
+          shortDescription: 'New short description',
+          content: 'New content',
+        };
+
+        const { body } = await request(app.getHttpServer())
+          .post('/api/posts')
+          .set(basicAuthorization)
+          .send(newPost)
+          .expect(HttpStatus.BAD_REQUEST);
+
+        expect(createErrorMessages({ blogId: ['isString'] })).toEqual(
+          body.errorsMessages,
+        );
+      });
+
+      it('returns 404 status code and proper error object if `blogId` does not exist', async () => {
+        const newPost: CreatePostInputDto = {
+          title: 'New title',
+          blogId: '507f1f77bcf86cd799439011',
+          shortDescription: 'New short description',
+          content: 'New content',
+        };
+
+        const { body } = await request(app.getHttpServer())
+          .post('/api/posts')
+          .set(basicAuthorization)
+          .send(newPost)
+          .expect(HttpStatus.NOT_FOUND);
+
+        expect(createErrorMessages({ blogId: ['blogIdNotExist'] })).toEqual(
+          body.errorsMessages,
+        );
+      });
+    });
+  });
+
+  it('returns 401 Unauthorized status code if there is no proper Authorization header', async () => {
+    const blog = await createBlog();
+
+    const newPost: CreatePostInputDto = {
+      title: 'New title',
+      blogId: blog.id,
+      content: 'New content',
+      shortDescription: 'New short description',
+    };
+
+    await request(app.getHttpServer())
+      .post('/api/posts')
+      .send(newPost)
+      .expect(HttpStatus.UNAUTHORIZED);
   });
 });

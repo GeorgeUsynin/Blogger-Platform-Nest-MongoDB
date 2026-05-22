@@ -2,9 +2,10 @@ import { INestApplication } from '@nestjs/common';
 import { HttpStatus } from '@nestjs/common';
 import request from 'supertest';
 import { CreateBlogInputDto } from '../../src/modules/bloggers-platform/blogs/api/dto';
+import { CreatePostInputDto } from '../../src/modules/bloggers-platform/posts/api/dto';
 import { runAfterAllSetup, runBeforeAllSetup } from '../helpers';
 
-describe('BlogsController (e2e) - GET /api/blogs/:id', () => {
+describe('PostsController (e2e) - GET /api/posts/:id', () => {
   let app: INestApplication;
   let basicAuthorization: {
     Authorization: string;
@@ -28,9 +29,9 @@ describe('BlogsController (e2e) - GET /api/blogs/:id', () => {
 
   const createBlog = async () => {
     const newBlog: CreateBlogInputDto = {
-      description: 'Eco lifestyle description',
-      name: 'Eco Lifestyle',
-      websiteUrl: 'https://ecolifestyle.com',
+      description: 'Tech blog description',
+      name: 'Tech Blog',
+      websiteUrl: 'https://techblog.com',
     };
 
     const { body } = await request(app.getHttpServer())
@@ -42,21 +43,37 @@ describe('BlogsController (e2e) - GET /api/blogs/:id', () => {
     return body;
   };
 
-  it('returns blog by requested id', async () => {
-    const createdBlog = await createBlog();
+  const createPost = async () => {
+    const blog = await createBlog();
+    const newPost: CreatePostInputDto = {
+      title: 'First post',
+      shortDescription: 'Short description for first post',
+      content: 'Detailed content for first post',
+      blogId: blog.id,
+    };
 
     const { body } = await request(app.getHttpServer())
-      .get(`/api/blogs/${createdBlog.id}`)
+      .post('/api/posts')
+      .set(basicAuthorization)
+      .send(newPost)
+      .expect(HttpStatus.CREATED);
+
+    return body;
+  };
+
+  it('returns post by requested id', async () => {
+    const createdPost = await createPost();
+
+    const { body } = await request(app.getHttpServer())
+      .get(`/api/posts/${createdPost.id}`)
       .expect(HttpStatus.OK);
 
-    expect(body).toEqual(createdBlog);
+    expect(body).toEqual(createdPost);
   });
 
-  it('returns 404 status code if there is no requested blog in database', async () => {
-    const fakeRequestedId = '507f1f77bcf86cd799439011';
-
+  it('returns 404 status code if there is no requested post in database', async () => {
     await request(app.getHttpServer())
-      .get(`/api/blogs/${fakeRequestedId}`)
+      .get('/api/posts/507f1f77bcf86cd799439011')
       .expect(HttpStatus.NOT_FOUND);
   });
 });

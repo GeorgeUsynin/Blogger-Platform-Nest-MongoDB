@@ -16,6 +16,12 @@ describe('BlogsController (e2e) - GET /api/blogs', () => {
     ({ app, connection, basicAuthorization } = await runBeforeAllSetup());
   });
 
+  afterEach(async () => {
+    await request(app.getHttpServer())
+      .delete('/api/testing/all-data')
+      .expect(HttpStatus.NO_CONTENT);
+  });
+
   beforeEach(async () => {
     const collections = await connection.db!.listCollections().toArray();
     for (const collection of collections) {

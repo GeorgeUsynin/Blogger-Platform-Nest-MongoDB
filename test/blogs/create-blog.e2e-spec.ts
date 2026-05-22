@@ -18,6 +18,12 @@ describe('BlogsController (e2e)', () => {
     ({ app, basicAuthorization } = await runBeforeAllSetup());
   });
 
+  afterEach(async () => {
+    await request(app.getHttpServer())
+      .delete('/api/testing/all-data')
+      .expect(HttpStatus.NO_CONTENT);
+  });
+
   afterAll(async () => {
     if (app) {
       await runAfterAllSetup(app);

@@ -1,12 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AppModule } from '../../src/app.module';
 import mongoose, { Connection } from 'mongoose';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
 import { ENV_VARIABLE_NAMES } from '../../src/constants';
 import { appSetup } from '../../src/setup';
 import { CoreConfig } from '../../src/core/config';
-import { INestApplication } from '@nestjs/common';
+import { HttpStatus, INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { AppModule } from '../../src/app.module';
+import { TestingModule as MyTestingModule } from '../../src/modules';
 
 export const getBasicAuthorization = (login: string, password: string) => {
   const buff = Buffer.from(`${login}:${password}`, 'utf8');
@@ -17,8 +20,13 @@ export const getBasicAuthorization = (login: string, password: string) => {
 
 export const runBeforeAllSetup = async () => {
   const moduleFixture: TestingModule = await Test.createTestingModule({
-    imports: [AppModule],
-  }).compile();
+    imports: [AppModule, MyTestingModule],
+  })
+    .overrideGuard(ThrottlerGuard)
+    .useValue({
+      canActivate: () => true,
+    })
+    .compile();
 
   const app: INestApplication = moduleFixture.createNestApplication();
 
@@ -46,10 +54,9 @@ export const runBeforeAllSetup = async () => {
   const basicAuthorization = getBasicAuthorization(adminLogin!, adminPassword!);
 
   // Cleaning all collections
-  const collections = await connection.db!.listCollections().toArray();
-  for (const collection of collections) {
-    await connection.db!.collection(collection.name).deleteMany({});
-  }
+  await request(app.getHttpServer())
+    .delete('/api/testing/all-data')
+    .expect(HttpStatus.NO_CONTENT);
 
   return { app, connection, basicAuthorization };
 };
@@ -57,6 +64,72 @@ export const runBeforeAllSetup = async () => {
 export const runAfterAllSetup = async (app: INestApplication) => {
   await app.close();
   await mongoose.connection.close();
+};
+
+type CreatedUser = {
+  id: string;
+  login: string;
+  email: string;
+  createdAt: string;
+};
+
+export const createUser = async (
+  app: INestApplication,
+  basicAuthorization: { Authorization: string },
+  payload: {
+    login: string;
+    password: string;
+    email: string;
+  },
+) => {
+  const { body } = await request(app.getHttpServer())
+    .post('/api/users')
+    .set(basicAuthorization)
+    .send(payload)
+    .expect(201);
+
+  return body as CreatedUser;
+};
+
+export const loginAndGetToken = async (
+  app: INestApplication,
+  loginOrEmail: string,
+  password: string,
+) => {
+  const { body } = await request(app.getHttpServer())
+    .post('/api/auth/login')
+    .send({ loginOrEmail, password })
+    .expect(200);
+
+  return body.accessToken as string;
+};
+
+export const createUserAndGetToken = async (
+  app: INestApplication,
+  basicAuthorization: { Authorization: string },
+  options?: { prefix?: string; password?: string; domain?: string },
+) => {
+  const rawPrefix = options?.prefix ?? 'u';
+  const sanitizedPrefix = rawPrefix.replace(/[^a-zA-Z0-9_-]/g, '') || 'u';
+  const prefix = sanitizedPrefix.slice(0, 3);
+  const password =
+    options?.password &&
+    options.password.length >= 6 &&
+    options.password.length <= 20
+      ? options.password
+      : 'secret12';
+  const domain = options?.domain ?? 'mail.com';
+  const uniquePart = Math.random().toString(36).slice(2, 7);
+  const login = `${prefix}${uniquePart}`.slice(0, 10);
+
+  const user = await createUser(app, basicAuthorization, {
+    login,
+    password,
+    email: `${login}@${domain}`,
+  });
+  const token = await loginAndGetToken(app, user.login, password);
+
+  return { user, token };
 };
 
 const websiteUrlPattern =
