@@ -86,7 +86,7 @@ export const createUser = async (
     .post('/api/users')
     .set(basicAuthorization)
     .send(payload)
-    .expect(201);
+    .expect(HttpStatus.CREATED);
 
   return body as CreatedUser;
 };
@@ -99,7 +99,7 @@ export const loginAndGetToken = async (
   const { body } = await request(app.getHttpServer())
     .post('/api/auth/login')
     .send({ loginOrEmail, password })
-    .expect(200);
+    .expect(HttpStatus.OK);
 
   return body.accessToken as string;
 };

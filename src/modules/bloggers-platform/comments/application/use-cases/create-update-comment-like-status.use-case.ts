@@ -33,7 +33,7 @@ export class CreateUpdateCommentLikeStatusUseCase implements ICommandHandler<Cre
 
     // recalculate and update comment likesCount info
     const { likesCount, dislikesCount } =
-      await this.likesService.getLikesCounts(commentId, ParentType.Post);
+      await this.likesService.getLikesCounts(commentId, ParentType.Comment);
     foundComment.updateLikesCounts(likesCount, dislikesCount);
 
     await this.commentsRepository.save(foundComment);
