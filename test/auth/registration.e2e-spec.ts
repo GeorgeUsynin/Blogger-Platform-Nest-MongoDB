@@ -7,8 +7,6 @@ import { EmailAdapter } from '../../src/modules/notification/email.adapter';
 import { CreateUserInputDto } from '../../src/modules/user-accounts/users/api/dto';
 import { runAfterAllSetup, runBeforeAllSetup } from '../helpers';
 
-jest.setTimeout(30000);
-
 describe('AuthController (e2e) - registration-related endpoints', () => {
   let app: INestApplication;
   let basicAuthorization: { Authorization: string };

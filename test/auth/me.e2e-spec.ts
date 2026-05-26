@@ -9,8 +9,6 @@ import {
   runBeforeAllSetup,
 } from '../helpers';
 
-jest.setTimeout(30000);
-
 describe('AuthController (e2e) - GET /api/auth/me', () => {
   let app: INestApplication;
   let basicAuthorization: { Authorization: string };
@@ -39,7 +37,11 @@ describe('AuthController (e2e) - GET /api/auth/me', () => {
     };
 
     const createdUser = await createUser(app, basicAuthorization, newUser);
-    const accessToken = await loginAndGetToken(app, newUser.login, newUser.password);
+    const accessToken = await loginAndGetToken(
+      app,
+      newUser.login,
+      newUser.password,
+    );
 
     const { body } = await request(app.getHttpServer())
       .get('/api/auth/me')
