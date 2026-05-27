@@ -71,7 +71,7 @@ describe('AuthController (e2e) - API rate limit', () => {
   it('returns 429 for POST /auth/registration-confirmation after 5 requests in 10 seconds', async () => {
     await expectRateLimit(
       '/api/auth/registration-confirmation',
-      { code: 'invalid-code' },
+      { code: '778bdefc-5849-11f1-ab07-0242ac120002' },
       HttpStatus.BAD_REQUEST,
     );
   });
